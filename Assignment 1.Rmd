@@ -1,0 +1,50 @@
+---
+title: "Assignment1 - Mushrooms"
+author: "Matthew Mayor"
+date: "9/1/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. Load the data into a data frame.
+
+```{r tidy=TRUE}
+mushrooms <- read.csv(
+"https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data",
+header = FALSE, sep = ",")
+```
+
+2. Create a subset with the unneeded columns removed.
+
+```{r}
+mushrooms <- subset(mushrooms, select = c(V1, V4, V6, V23))
+```
+
+3. Rename the columns.
+
+```{r}
+colnames(mushrooms) <- c("Class", "CapColor", "Odor", "Habitat")
+```
+
+4. Rename the values in each column.
+
+```{r tidy=TRUE}
+levels(mushrooms$Class) <- c("edible", "poisonous")
+levels(mushrooms$CapColor) <- c("buff", "cinnamon", "red", "gray", "brown", "pink", 
+"green", "purple", "white", "yellow")
+levels(mushrooms$Odor) <- c("almond", "creosote", "foul", "anise", "musty", "none", 
+"pungent", "spicy", "fishy")
+levels(mushrooms$Habitat) <- c("woods", "grasses", "leaves", "meadows", "paths", "urban", 
+"waste")
+```
+
+5. Review the data frame.
+
+```{r}
+head(mushrooms)
+```
