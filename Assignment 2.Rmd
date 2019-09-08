@@ -1,0 +1,82 @@
+---
+title: "Assignment 2"
+author: "Matthew Mayor"
+date: "9/8/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+For this assignment, I had to collect opinions of recent popular movies from people I know and record them in a SQL database and then load that database into R.
+
+I started by creating and populating the database in MySQL.
+
+These are the SQL commands I performed to do this:
+
+CREATE DATABASE movies;
+
+CREATE TABLE rottencucumbers (
+
+id INT NOT NULL AUTO_INCREMENT,
+	
+firstname VARCHAR(100) NOT NULL,
+    
+captainmarvel INT,
+    
+avengersendgame INT,
+    
+midsommar INT,
+    
+toystory4 INT,
+    
+spidermanffh INT,
+    
+lionking INT,
+    
+PRIMARY KEY (id)
+    
+);
+
+INSERT INTO rottencucumbers (firstname, captainmarvel, avengersendgame, midsommar, toystory4, spidermanffh, lionking)
+
+VALUES ('Matt', 3, 5, 5, null, 2, null),
+	   
+('Emily', null, null, 5, null, null, null),
+       
+('Josephine', 3, 5, null, null, 3, null),
+       
+('Nicole', 5, 5, null, null, 4, null),
+       
+('Jessica', 4, 5, null, null, null, null);
+
+As you might be able to see, the people I surveyed had not been to many movies recently.
+
+In R, I used the DBI and RMySQL packages.  I started by loading each of them.
+
+```{r}
+library(DBI)
+library(RMySQL)
+```
+
+I then proceeded to establish the connection.
+
+```{r}
+mysql <- dbDriver("MySQL")
+con <- dbConnect(mysql, dbname = 'movies', user = 'data607', password = 'data607', host = 'localhost')
+```
+
+I then use the dbGetQuery() function to load my table into a dataframe.
+
+```{r}
+movies <- dbGetQuery(con, "SELECT * FROM rottencucumbers")
+```
+
+Last, I loaded the dataframe to check that everything worked.
+
+```{r}
+movies
+```
