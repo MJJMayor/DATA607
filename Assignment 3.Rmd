@@ -1,0 +1,110 @@
+---
+title: "Assignment3"
+author: "Matthew Mayor"
+date: "9/15/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The first problem for this assignment involved manipulating strings using stringr and regular expressions.
+
+I started by loading the "stringr" package and the data for the problem.
+
+```{r}
+library(stringr)
+raw.data <- "555-1239Moe Szyslak(636) 555-0113Burns, C. Montgomery555 -6542Rev. Timothy Lovejoy555 8904Ned Flanders636-555-3226Simpson, Homer5553642Dr. Julius Hibbert"
+name <- unlist(str_extract_all(raw.data, "[[:alpha:]., ]{2,}"))
+name
+```
+
+My first task was to make sure all the names were in a first name last name format.  For this I used the str_replace_all function.
+
+```{r}
+name <- str_replace_all(name, "(.+,)(.+)", "\\2 \\1")
+name
+```
+
+At this point, they were almost there, but needed a tiny bit of cleaning up.
+
+```{r}
+name <- str_trim(name)
+name <- str_replace_all(name, ",", "")
+name
+```
+
+Now that they were formatted correctly, I could address the next two tasks.
+
+First, I had to get a logical vector indicating which names had titles.
+
+```{r}
+title <- str_detect(name, "^[[:alpha:]]{2,3}[.]")
+title
+```
+
+And then I had to get a logical vector indicating which characters have a second name.
+
+```{r}
+mult_names <- str_detect(name, "^[[:alpha:]][.]")
+mult_names
+```
+
+For the next problem, I had to analyze a few regular expressions.
+
+1.
+
+```{r}
+exp1 <- "[0-9]+\\$"
+str_detect("405$",exp1)
+```
+
+This matches one or more digits followed by a dollar sign.  I.e. 405$.
+
+2.
+
+```{r}
+exp2 <- "\\b[a-z]{1,4}\\b"
+str_detect("goat",exp2)
+```
+
+This matches a one-to-four letter all lowercase word. I.e. "goat"
+
+3. 
+
+```{r}
+exp3 <- ".*?\\.txt$"
+str_detect("hidden.txt",exp3)
+```
+
+This matches a string ending in .txt and whatever precedes it. I.e. "hidden.txt"
+
+4.
+
+```{r}
+exp4 <- "\\d{2}/\\d{2}/\\d{4}"
+str_detect("09/22/2004",exp4)
+```
+
+This matches a date format where the month and day are represented by two digits and the year by four.  I.e. "09/22/2004"
+
+5.
+
+```{r}
+exp5 <- "<(.+?)>.+?</\\1>"
+str_detect("<urgent> vote blue </urgent>",exp5)
+```
+
+This matches a string contained in \<\> followed by any string followed by \</\> with the original string appearing.  Example can be seen in the R code above.
+
+
+Extra credit: For extra credit I decode the message.
+
+```{r}
+code <- "clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0Tanwo Uwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigO d6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5 fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr"
+code <- str_replace_all(code, "[[:digit:][:lower:][:space:]]", "")
+code
+```
+
+The code reads "Congratulations you are a supernerd!"
