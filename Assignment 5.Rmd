@@ -1,0 +1,87 @@
+---
+title: "Assignment 5"
+author: "Matthew Mayor"
+date: "9/29/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+To start on this assignment, I loaded all the necessary libraries: plyr, dplyr, tidyr, and ggplot2.
+
+```{r}
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+I then loaded the CSV file from GitHub where I uploaded it.
+
+```{r}
+flights <- read.csv("https://raw.githubusercontent.com/MJJMayor/DATA607/master/airlines.csv")
+flights
+```
+
+As you can see, it needs some tidying.  First was to get rid of the empty row.
+
+```{r}
+flights <- slice(flights, c(1,2,4,5))
+flights
+```
+
+Next, I needed to fill in the blank values in the first column with the appropriate airline.
+
+```{r}
+flights$X <- c("ALASKA","ALASKA","AM WEST", "AM WEST")
+flights
+```
+
+Next was to fix the problem of some of the columns being values.
+
+```{r}
+flights <- gather(flights, "Dest", "Freq", 3:7)
+flights
+```
+
+Next, was to rename the first two columns that were previously given default names.
+
+```{r}
+flights <- rename(flights, Airline = X, Arrival = X.1)
+flights
+```
+
+Now, according to tidy rules, I had to reorder the columns so that the fixed values came before the observed values.  In doing so I put the destination before the arrival status.
+
+```{r}
+flights <- select(flights, Airline, Dest, Arrival, Freq)
+flights
+```
+
+The table is now in tidy condition.  Next is to do some analysis.
+
+I start by using ddply to create a new column that stores the proportion of flights with a certain arrival status grouped by airline and destination.
+
+```{r}
+flights <- ddply(flights, .(Airline,Dest), transform, prop = Freq/sum(Freq))
+flights
+```
+
+Next, I used arrange() to revert the table to the same sorting it had previously.
+
+```{r}
+flights <- arrange(flights, Dest)
+flights
+```
+
+Last, I plotted the proportion of on time arrivals at each airport between each airline in a bar plot.
+
+```{r}
+ggplot(data=flights, aes(x=Dest, y=prop, fill=Airline)) + geom_bar(stat="identity", position=position_dodge())
+```
+
+From this plot you can see that at every airport, ALASKA had a higher proportion of on time arrivals.  The difference is the starkest at San Francisco and Seattle.
