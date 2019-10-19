@@ -1,0 +1,167 @@
+---
+title: "linkedin"
+author: "Mael Illien"
+date: "10/14/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(rvest)
+library(tidyverse)
+```
+
+```{r}
+wlist <- read.csv('https://raw.githubusercontent.com/dhairavc/DATA607/master/whitelist.csv')
+plist <- data.frame(paired = c("data science", "problem solving", "computer science"), stringsAsFactors = FALSE)
+plist$occurrences <- rep(0, length(plist[,1]))
+```
+
+The extract_words function will take a link to a particular job post and the selector which contains the list of interest and return a dataframe of words in that job post's skills section and the number of occurences of each particular words.
+
+```{r}
+extract_words <- function(link_to_job_page, selector) {
+  # download the html and turn it into an XML file with read_html()
+  job_page <- read_html(link_to_job_page)
+  # extract specific nodes with html_nodes() using css selector
+  skills_tag <- html_nodes(job_page, selector)
+  # extract content from nodes
+  skills_text <- html_text(skills_tag)
+  # remove punctuation
+  skills_text <- gsub('[[:punct:]]', '', skills_text)
+  # split sentences into individual words
+  words <- unlist(strsplit(skills_text, " "))
+  words <- tolower(words)
+  # count the number of occurences of each word
+  wordcount <- table(words)
+  wordcount_df <- as.data.frame(wordcount)
+  return(wordcount_df)
+}
+```
+
+```{r}
+#this is the function I added - Matt
+
+count_pairs <- function(link_to_job_page, selector, pairlist) {
+  #this function takes an nx1 whitelist to which it adds a column of counts from the supplied webpage
+  job_page <- read_html(link_to_job_page)
+  skills_tag <- html_nodes(job_page, selector)
+  skills_text <- html_text(skills_tag)
+  skills_text <- tolower(skills_text)
+  #iterate over the whitelist to count occurrences in the page text and store them in new column
+  for (i in 1:length(pairlist[,1])){
+    pairlist[i,2] <- pairlist[i,2] + sum(str_count(skills_text, pairlist[i,1]))
+  }
+  return(pairlist)
+}
+```
+
+Given a list of links to job pages, call the extract_words function to get the total word counts from the chosen selector from each each link, aggregate them and return the counts in decreasing order in a data frame.
+
+```{r}
+get_word_counts <- function(links_to_jobs, selector, pairlist) {
+  
+  # initialize a list 
+  counts <- list()
+  
+  for (i in 1:length(links_to_jobs)) {
+    df <- extract_words(links_to_jobs[i], selector)
+    counts[[i]] <- df
+    
+    #this is where I tried to implement it down the line, but I don't know what to do with it in this function
+    pairlist <- count_pairs(links_to_jobs[i], selector, pairlist)
+    
+  }
+  # combine into a dataframe
+  skill_count <- do.call(rbind, counts)
+  
+  # sum multiple occurences of the same word
+  total_skill_count <- skill_count %>% 
+    group_by(words) %>% 
+    summarize(Occurences = sum(Freq)) %>% 
+    arrange(desc(Occurences ))
+  return(total_skill_count)
+}
+```
+
+A function that applies the whitelist of data science key words and skills to our count of word occurences to filter our irrelevant words.
+
+```{r}
+get_DS_skills <- function(word_count) {
+  # apply whitelist
+  total_skill_count <- word_count %>% filter(words %in% wlist$Whitelist)
+  return(total_skill_count)
+}
+```
+
+## Extracting Data Science Skills from Linkedin
+
+```{r}
+linkedin_top_skills <- function(pairlist) {
+  # save the url which contains the search results
+  rooturl <- "https://www.linkedin.com/jobs/data-scientist-jobs/"
+  # for each job, extract the href attribute from each job using the css selector
+  search_results <- read_html(rooturl)
+  links_to_jobs <- search_results %>% 
+    html_nodes("a.result-card__full-card-link") %>% 
+    html_attr("href")
+
+  # for Linkedin job posts, skills are located in <li> tags with the following selector
+  selector <- ".description__text--rich li"
+  # get word counts from the list of links to job posts
+  word_count <- get_word_counts(links_to_jobs, selector, pairlist)
+  
+  # uncomment this to see the results pre-whitelist
+  print(word_count)
+  print(pairlist)
+  
+  # get data science related skills from the above word count
+  skill_count <- get_DS_skills(word_count)
+  return(skill_count)
+}
+```
+
+## Extracting Data Science Skills from Indeed
+
+```{r}
+indeed_top_skills <- function() {
+  # save the url which contains the search results
+  domain <- "https://www.indeed.com"
+  rooturl <- "https://www.indeed.com/jobs?q=data+science&l=New+York+City%2C+NY"
+  # for each job, extract the href attribute from each job using the css selector
+  search_results <- read_html(rooturl)
+ 
+  # create a list of links by extracting the href attribute from the nodes
+  paths_to_jobs <- search_results %>%
+    html_nodes(".title") %>%
+    html_children() %>%
+    html_attr("href")
+  
+  # contatenate paths with the domain name to create valid links
+  links_to_jobs <- str_c(domain, paths_to_jobs)
+  
+  # for Indeed job posts, skills are located in <li> tags so the selector is simple
+  selector <- "li"
+  # get word counts from the list of links to job posts
+  word_count <- get_word_counts(links_to_jobs, selector)
+  
+  # uncomment this to see the results pre-whitelist
+  print(word_count)
+  
+  # get data science related skills from the above word count
+  skill_count <- get_DS_skills(word_count)
+  return(skill_count)
+}
+```
+
+## Web Scraping
+
+```{r}
+linkedin <- linkedin_top_skills(plist)
+indeed <- indeed_top_skills()
+```
+
+
